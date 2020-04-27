@@ -202,7 +202,8 @@ model <- permuco4brain::brainperm(formula = formula,
                                   data = design,
                                   graph = graph,
                                   np = 5000,
-                                  multcomp = "clustermass")
+                                  multcomp = "clustermass",
+                                  return_distribution = TRUE)
 ```
 
 where np indicates the number of permutation.
