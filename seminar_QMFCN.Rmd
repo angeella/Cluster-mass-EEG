@@ -35,6 +35,7 @@ library(tidyr)
 library(purrr)
 library(abind)
 library(permuco4brain)
+library(hommel)
 ```
 
 ```{r}
@@ -144,7 +145,7 @@ cannot, by design, be in the same cluster, which is not a useful assumption for 
 
 Then, we have the spatial adjacency definition, we need to define the temporal one. We reproduce this graph $n_{\text{time-points}}$ times, the edges between all pairs of two vertices (tests) are associated to the same electrode when they are temporally adjacent. The final graph has a total of vertices equals to the number of tests ($n_{\text{channels}} \times n_{\text{time-points}}$). The following figure represents the case of $64$ channels and $3$ temporal measures:
 
-![Example from @Jaromil1](/Image/cluster.png)
+![Example from @Jaromil1](Image/cluster.JPG)
 
 We then delete all the vertices which statistics are below a threshold, e.g. the $95$ percentile of the null distribution of the $F$ statistics. This produces a new graph composed by multiple connected components. Then, each connected component is interpreted as a spatiotemporal cluster. Finally, for each connected component, we compute the cluster-mass statistic using the sum (or sum of squares) of statistics of that particular connected component.
 
@@ -242,7 +243,7 @@ However, our significant cluster (11) says only that at least one combination ch
 ARIeeg(model = model)
 ```
 
-So, we have at least $5\%$ truly active component in the cluster $32$.
+So, we have at least $16.58\%$ truly active component in the cluster $32$.
 
 # References
 
