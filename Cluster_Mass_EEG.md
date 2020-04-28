@@ -88,8 +88,6 @@ data_seg %>%
   theme(legend.position = "bottom")
 ```
 
-![Plot stimuli](figure-html/unnamed-chunk-6-1.png)
-
 # Analysis
 
 ## Multiple testing problem?
@@ -188,7 +186,6 @@ graph <- position_to_graph(channels_tbl(data_seg), name = .channel, delta = 53,
                              x = .x, y = .y, z = .z)
 plot(graph)
 ```
-![Graph](figure-html/unnamed-chunk-9-1.png)
 
 4. Define the repeated measures ANOVA formula: 
 
