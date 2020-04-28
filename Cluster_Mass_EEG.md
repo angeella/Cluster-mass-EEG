@@ -1,32 +1,14 @@
----
-title: "Cluster mass EEG"
-author: "Angela Andreella"
-date: "09/04/2020"
-output: html_document
-bibliography: bibliography.bib
----
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+We will explain and apply in R the **permutation-based cluster-mass** method proposed by @Maris using EEG data. Finally the **All-Resolution Inference** from @ARI is applied in order to compute the lower bound for the true discovery proportion inside the clusters computed.
 
-# Data
+# Packages
 
-ERP experiment composed by:
-
-- 20 Subjects,
-- 32 Channels
-- Stimuli: pictures. Conditions:
-    1. (f): fear (face)
-    2. (h): happiness (face)
-    3. (d): disgust (face)
-    4. (n): neutral (face)
-    5. (o): object
-
-We have one observation for each subject and each stimulus.
+First of all, you need to install and load the following packages:
 
 ```{r}
-#devtools::install_github("angeella/ARIeeg")
+devtools::install_github("angeella/ARIeeg")
+devtools::install_github("bnicenboim/eeguana")
+devtools::install_github("jaromilfrossard/permuco")
 library(ARIeeg)
 library(dplyr)
 library(eeguana)
@@ -38,11 +20,26 @@ library(permuco4brain)
 library(hommel)
 ```
 
+# Data
+
+The Dataset from the package ```ARIeeg``` is an **ERP experiment** composed by:
+
+- 20 Subjects,
+- 32 Channels
+- Stimuli: pictures. Conditions:
+    1. (f): fear (face)
+    2. (h): happiness (face)
+    3. (d): disgust (face)
+    4. (n): neutral (face)
+    5. (o): object
+
+We have one observation for each subject and each stimulus. You can load it using:
+
 ```{r}
 load(system.file("extdata", "data_eeg_emotion.RData", package = "ARIeeg"))
 ```
 
-We transform the data from eegUtils to eeguana
+We transform the data as ```eeg_lst``` class object from the package ```eeguana```:
 
 ```{r}
 data = utilsTOlst(data=dati)
@@ -59,7 +56,7 @@ data <-
   select(-one_of(chan_to_rm))
 ```
 
-Finally, we segment the data and select two conditions, i.e., disgust face and object
+Finally, we segment the data and select two conditions, i.e., **disgust face** and **object**:
 
 ```{r}
 data_seg <- data %>%
@@ -90,12 +87,11 @@ data_seg %>%
   geom_vline(xintercept = .17, linetype = "dotted") +
   theme(legend.position = "bottom")
 ```
-
 # Analysis
 
 ## Multiple testing problem?
 
-The aim is to test the if the brain signal among the two conditions is different from $0$ for each time points, i.e., $500$, and for each channels, i.e., $27$. Therefore, we have $500*2$ statistical tests to perform considering the random subject effect. The multiple testing problem is then obvious, correction method as Bonferroni or similar doesn't capture the time-spatial correlation of the tests, the cluster mass method, proposed by @Maris, is then used. It is based on permutation theory, and it gain some power respect to other procedure correcting at level of spatial temporal cluster instead of at level of single tests. It is similar as concept to the cluster mass in the fMRI framework, but in this case the voxels are expressed in terms of combination time-points/channels. The method is then able to gain some power respect to some traditional conservative FWER correction method exploiting the spatial temporal structure of the data.
+The aim is to test the if the brain signal among the two conditions is different from $0$ for each time points, i.e., $500$, and for each channels, i.e., $27$. Therefore, we have $500 \cdot 2$ statistical tests to perform considering the **random subject effect**. The multiple testing problem is then obvious, correction method as Bonferroni or similar doesn't capture the time-spatial correlation of the tests, the cluster mass method, proposed by @Maris, is then used. It is based on **permutation theory**, and it gain some power respect to other procedure correcting at level of spatial temporal cluster instead of at level of single tests. It is similar as concept to the cluster mass in the fMRI framework, but in this case the voxels are expressed in terms of combination time-points/channels. The method is then able to gain some power respect to some traditional conservative FWER correction method exploiting the spatial temporal structure of the data.
 
 ## Repeated Measures Anova
 
@@ -104,23 +100,24 @@ The cluster mass method is based on the repeated measures Anova, i.e.,
 $$
 y = \mathbb{1}_{N \times 1} \mu + X_{\eta} \eta + X_{\pi} \pi + X_{\eta \pi} \eta \pi + \epsilon
 $$
+
 where $1_{N \times 1}$ is a matrix with ones and
 
-  1. $\mu$ is the intercept;
+  1. $\mu$ is the **intercept**;
   2. $y \in \mathbb{R}^{N \times 1}$ is the response variables, i.e., the **signal**, in our case $N = n_{subj} \times n_{stimuli} = 40$;
-  3. $X_{\eta} \in \mathbb{R}^{N \times n_{stimuli}}$ is the design matrix describing the fixed effect regarding the stimuli, and $\eta \in \mathbb{R}^{n_{stimuli} \times 1}$ the corresponding parameter of interest;
-  4. $X_{\pi} \in \mathbb{R}^{N \times n_{subj}}$ is the design matrix describing the random effect regarding the subjects, and $\pi \in \mathbb{R}^{n_{subj} \times 1}$ the corresponding parameter.
-  5. $X_{\eta \pi}$ is the design matrix describing the interaction effects between subjects and conditions;
-  5. $\epsilon \in \mathbb{R}^{N \times 1}$ is the error term with $0$ mean and variance $\sigma^2 I_N$.
+  3. $X_{\eta} \in \mathbb{R}^{N \times n_{stimuli}}$ is the **design matrix** describing the **fixed effect** regarding the stimuli, and $\eta \in \mathbb{R}^{n_{stimuli} \times 1}$ the corresponding parameter of interest;
+  4. $X_{\pi} \in \mathbb{R}^{N \times n_{subj}}$ is the **design matrix** describing the **random effect** regarding the subjects, and $\pi \in \mathbb{R}^{n_{subj} \times 1}$ the corresponding parameter.
+  5. $X_{\eta \pi}$ is the **design matrix** describing the **interaction effects** between subjects and conditions;
+  5. $\epsilon \in \mathbb{R}^{N \times 1}$ is the **error term** with $0$ mean and variance $\sigma^2 I_N$.
 
 Therefore, $y \sim (\mathbb{1}\mu + X_{\eta} \eta, \Sigma)$, $\pi \sim (0, \sigma^2_{\pi} I_{nsubj})$ and $\eta \pi \sim (0,\text{cov}(\eta \pi))$.
 
-We want to make inference on $\eta$, such that $H_0: \eta = 0$ vs $H_1: \eta \ne 0$. We do that using the F statistic, i.e.,
+We want to make inference on $\eta$, such that $H_0: \eta = 0$ vs $H_1: \eta \ne 0$. We do that using the **F statistic**, i.e.,
 
 $$
 F = \dfrac{y^\top H_{X_{\eta}} y / (n_{stimuli} - 1)}{ y^\top H_{X_{\eta \pi}}y/(n_{stimuli} -1)(n_{subj} -1)} 
 $$
-where $H_{X}$ is the projection matrix, i.e., $H_{X} = X(X^\top X)^{-1} X^\top$. In order to compute this test, we use an alternative definition of $F$ based on the residuals:
+where $H_{X}$ is the **projection matrix**, i.e., $H_{X} = X(X^\top X)^{-1} X^\top$. In order to compute this test, we use an alternative definition of $F$ based on the residuals:
 
 $$
 F = \dfrac{r^\top H_{X_{\eta}} r / (n_{stimuli} - 1)}{ r^\top H_{X_{\eta \pi}}r/(n_{stimuli} -1)(n_{subj} -1)} 
@@ -137,20 +134,19 @@ $$
 if the two-tailed is considered.
 
 We have this model for each time point $t \in \{1, \dots, 500\}$ and each channel, so finally we will have $n_{\text{time-points}} \times n_{\text{channels}}$ statistical tests/p-values (raw).
-  
+
 ## Spatio-temporal Cluster mass 
 
-Then, we need to construct the spatial-temporal clusters in order to correct the raw p-values for the FWER. In this case, we will use the theory of graph, where the vertices represent the channels and the edges represents the adjacency relationship. The adjacency must be defined using prior information, therefore the three-dimensional euclidean distance between channels is used. Two channels are defined adjacent if their euclidean distance is less than a threshold $\delta$, where $\delta$ is the smallest euclidean distance that produces connected graph. This is due to the fact that connected graph implies no disconnected sub-graph. Having sub-graphs implies that some tests
-cannot, by design, be in the same cluster, which is not a useful assumption for this analysis. (@Jaromil, @Jaromil1).
+Then, we need to construct the **spatial-temporal clusters** in order to correct the raw p-values for the FWER. In this case, we will use the theory of graph, where the vertices represent the channels and the edges represents the **adjacency** relationship. The adjacency must be defined using prior information, therefore the three-dimensional euclidean distance between channels is used. Two channels are defined adjacent if their euclidean distance is less than a threshold $\delta$, where $\delta$ is the smallest euclidean distance that produces connected graph. This is due to the fact that connected graph implies no disconnected sub-graph. Having sub-graphs implies that some tests cannot, by design, be in the same cluster, which is not a useful assumption for this analysis. (@Jaromil, @Jaromil1).
 
 Then, we have the spatial adjacency definition, we need to define the temporal one. We reproduce this graph $n_{\text{time-points}}$ times, the edges between all pairs of two vertices (tests) are associated to the same electrode when they are temporally adjacent. The final graph has a total of vertices equals to the number of tests ($n_{\text{channels}} \times n_{\text{time-points}}$). The following figure represents the case of $64$ channels and $3$ temporal measures:
 
 ![Example from @Jaromil1](Image/cluster.JPG)
 
-We then delete all the vertices which statistics are below a threshold, e.g. the $95$ percentile of the null distribution of the $F$ statistics. This produces a new graph composed by multiple connected components. Then, each connected component is interpreted as a spatiotemporal cluster. Finally, for each connected component, we compute the cluster-mass statistic using the sum (or sum of squares) of statistics of that particular connected component.
+We then delete all the vertices which statistics are below a threshold, e.g. the $95$ percentile of the null distribution of the $F$ statistics. This produces a new graph composed by **multiple connected components**. Then, each connected component is interpreted as a spatiotemporal cluster. Finally, for each connected component, we compute the cluster-mass statistic using the sum (or sum of squares) of statistics of that particular connected component.
 
 
-The cluster-mass null distribution is computed by permutations while maintaining spatiotemporal correlations among tests. Permutations must be performed without changing the position of electrodes nor mixing time-points. Concretely, after transforming the responses using the permutation method in Kherad-Pajouh and Renaud (2015), they are sorted in a three-dimensional array. It has the design (subjects $\times$ stimuli) in the first dimension, time in the second one and electrodes in the third one. Then, only the first dimension is permuted to create a re-sampled response (or 3D array).
+The cluster-mass null distribution is computed by permutations while maintaining spatiotemporal correlations among tests. Permutations must be performed without changing the position of electrodes nor mixing time-points. Concretely, after transforming the responses using the permutation method in @Kherad, they are sorted in a three-dimensional array. It has the design (subjects $\times$ stimuli) in the first dimension, time in the second one and electrodes in the third one. Then, only the first dimension is permuted to create a re-sampled response (or 3D array).
 Doing so, it does not reorder time-points, neither electrodes, therefore, the spatiotemporal correlations are maintained within each permuted sample.
 
 # Permuco4brain
@@ -247,10 +243,3 @@ So, we have at least $16.58\%$ truly active component in the cluster $32$.
 
 # References
 
-
-
-
-
-
-
-    
