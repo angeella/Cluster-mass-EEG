@@ -99,7 +99,7 @@ The aim is to test if the difference of brain signal during the two conditions i
 The cluster mass method is based on the **Repeated Measures Anova**, i.e.,
 
 $$
-y = \mathbb{1}_{N \times 1} \mu + \eta
+y = \mathbb{1}_{N \times 1} \mu + \eta + X_{\pi} \pi + X_{\eta \pi} \eta \pi + \epsilon
 $$
 
 where $1_{N \times 1}$ is a matrix with ones and
