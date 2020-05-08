@@ -126,7 +126,7 @@ $$
 
 where $r = (H_{X^{\eta}} + H_{X^{\eta\pi}})y$. For further details, see [Kherad Pajouh and Renaud, 2014](https://link.springer.com/article/10.1007/s00362-014-0617-3).
 
-So, let the group of permutation, including the identity transformation, $\mathcal{P}$, we use $r^\star = P r$, where $P \in \mathcal{P}$ to compute the null distribution of our test $\mathcal{R}$ and then the p-value, i.e.,
+So, let the group of permutation, including the identity transformation, $\mathcal{P}$, we use $r^\star = P r$, where $P \in \mathcal{P}$ to compute the null distribution of our test, i.e., $\mathcal{R}$, and then the p-value, i.e.,
 
 $$
 \text{p-value} = \dfrac{1}{B} \sum_{r^\star_b \in \mathcal{R}} \mathbb{I}(|r^\star_b| \ge |r|)
