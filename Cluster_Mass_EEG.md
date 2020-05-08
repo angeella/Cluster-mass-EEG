@@ -1,5 +1,5 @@
 
-We will explain and apply in R the **permutation-based cluster-mass** method proposed by @Maris using EEG data. Finally the **All-Resolution Inference** from @ARI is applied in order to compute the lower bound for the true discovery proportion inside the clusters computed.
+We will explain and apply in R the **Permutation-Based Cluster-Mass** method proposed by [Maris and Oostenveld, 2007](https://doi.org/10.1016/j.jneumeth.2007.03.024) and developed in R by [Frossard and Renaud, 2018](https://cran.r-project.org/web/packages/permuco/vignettes/permuco_tutorial.pdf), using EEG data. Finally the **All-Resolution Inference** from [Rosenblatt et al. 2018](https://doi.org/10.1016/j.neuroimage.2018.07.060) is applied in order to compute the lower bound for the true discovery proportion inside the clusters computed.
 
 # Packages
 
@@ -92,14 +92,16 @@ data_seg %>%
 
 ## Multiple testing problem?
 
-The aim is to test the if the brain signal among the two conditions is different from $0$ for each time points, i.e., $500$, and for each channels, i.e., $27$. Therefore, we have $500 \cdot 27$ statistical tests to perform considering the **random subject effect**. The multiple testing problem is then obvious, correction method as Bonferroni or similar doesn't capture the time-spatial correlation of the tests, the cluster mass method, proposed by @Maris, is then used. It is based on **permutation theory**, and it gain some power respect to other procedure correcting at level of spatial temporal cluster instead of at level of single tests. It is similar as concept to the cluster mass in the fMRI framework, but in this case the voxels are expressed in terms of combination time-points/channels. The method is then able to gain some power respect to some traditional conservative FWER correction method exploiting the spatial temporal structure of the data.
+The aim is to test if the difference of brain signal during the two conditions is different from $0$ for each time points, i.e., $500$, and for each channel, i.e., $27$. Therefore, we have $500 \cdot 27$ statistical tests to perform at group-level, so considering the **random subject effect**. The multiple testing problem is then obvious, and correction methods as Bonferroni or similar don't capture the time-spatial correlation structure of the statistical tests, the cluster mass method, proposed by [Maris and Oostenveld, 2007](https://doi.org/10.1016/j.jneumeth.2007.03.024), is then used. It is based on **permutation theory**, and it gains some power respect to other procedure correcting at level of spatial-temporal cluster instead of at level of single tests. It is similar to the cluster mass in the fMRI framework, but in this case, the *voxels*, i.e., the single object of the analysis, are expressed in terms of combination time-points/channels. The method is then able to gain some power respect to some traditional conservative FWER correction method exploiting the spatial-temporal structure of the data.
 
-## Repeated Measures Anova
+## Repeated Measures Anova Model
 
-The cluster mass method is based on the repeated measures Anova, i.e.,
+The cluster mass method is based on the **Repeated Measures Anova**, i.e.,
 
 $$
+
 y = \mathbb{1}_{N \times 1} \mu + X_{\eta} \eta + X_{\pi} \pi + X_{\eta \pi} \eta \pi + \epsilon
+
 $$
 
 where $1_{N \times 1}$ is a matrix with ones and
@@ -109,7 +111,7 @@ where $1_{N \times 1}$ is a matrix with ones and
   3. $X_{\eta} \in \mathbb{R}^{N \times n_{stimuli}}$ is the **design matrix** describing the **fixed effect** regarding the stimuli, and $\eta \in \mathbb{R}^{n_{stimuli} \times 1}$ the corresponding parameter of interest;
   4. $X_{\pi} \in \mathbb{R}^{N \times n_{subj}}$ is the **design matrix** describing the **random effect** regarding the subjects, and $\pi \in \mathbb{R}^{n_{subj} \times 1}$ the corresponding parameter.
   5. $X_{\eta \pi}$ is the **design matrix** describing the **interaction effects** between subjects and conditions;
-  5. $\epsilon \in \mathbb{R}^{N \times 1}$ is the **error term** with $0$ mean and variance $\sigma^2 I_N$.
+  6. $\epsilon \in \mathbb{R}^{N \times 1}$ is the **error term** with $0$ mean and variance $\sigma^2 I_N$.
 
 Therefore, $y \sim (\mathbb{1}\mu + X_{\eta} \eta, \Sigma)$, $\pi \sim (0, \sigma^2_{\pi} I_{nsubj})$ and $\eta \pi \sim (0,\text{cov}(\eta \pi))$.
 
@@ -138,23 +140,21 @@ We have this model for each time point $t \in \{1, \dots, 500\}$ and each channe
 
 ## Spatio-temporal Cluster mass 
 
-Then, we need to construct the **spatial-temporal clusters** in order to correct the raw p-values for the FWER. In this case, we will use the theory of graph, where the vertices represent the channels and the edges represents the **adjacency** relationship. The adjacency must be defined using prior information, therefore the three-dimensional euclidean distance between channels is used. Two channels are defined adjacent if their euclidean distance is less than a threshold $\delta$, where $\delta$ is the smallest euclidean distance that produces connected graph. This is due to the fact that connected graph implies no disconnected sub-graph. Having sub-graphs implies that some tests cannot, by design, be in the same cluster, which is not a useful assumption for this analysis. (@Jaromil, @Jaromil1).
+Then, we need to construct the **spatial-temporal clusters** in order to correct the raw p-values for the FWER. In this case, we will use the theory of graph, where the vertices represent the channels, and the edges represent the **adjacency** relationship. The adjacency must be defined using prior information, therefore the three-dimensional Euclidean distance between channels is used. Two channels are defined adjacent if their Euclidean distance is less than a threshold $\delta$, where $\delta$ is the smallest euclidean distance that produces a connected graph. This is due to the fact that a connected graph implies no disconnected sub-graph. Having sub-graphs implies that some tests cannot, by design, be in the same cluster, which is not a useful assumption for this analysis. ([Frossard and Renaud, 2018](https://cran.r-project.org/web/packages/permuco/vignettes/permuco_tutorial.pdf); [Frossard, 2019](10.13097/archive-ouverte/unige:125617)).
 
-Then, we have the spatial adjacency definition, we need to define the temporal one. We reproduce this graph $n_{\text{time-points}}$ times, the edges between all pairs of two vertices (tests) are associated to the same electrode when they are temporally adjacent. The final graph has a total of vertices equals to the number of tests ($n_{\text{channels}} \times n_{\text{time-points}}$). The following figure represents the case of $64$ channels and $3$ temporal measures:
+Then, having the spatial adjacency definition, we need to define the temporal one. We reproduce this graph $n_{\text{time-points}}$ times, the edges between all pairs of two vertices (tests) are associated with the same electrode when they are temporally adjacent. The final graph has a total of vertices equals to the number of tests ($n_{\text{channels}} \times n_{\text{time-points}}$). The following figure represents the case of $64$ channels and $3$ temporal measures:
 
-![Example from @Jaromil1](Image/cluster.JPG)
+![Example of graph of adjacency from [Frossard, 2019](10.13097/archive-ouverte/unige:125617)](Image/cluster.JPG)
 
-We then delete all the vertices which statistics are below a threshold, e.g. the $95$ percentile of the null distribution of the $F$ statistics. This produces a new graph composed by **multiple connected components**. Then, each connected component is interpreted as a spatiotemporal cluster. Finally, for each connected component, we compute the cluster-mass statistic using the sum (or sum of squares) of statistics of that particular connected component.
+We then delete all the vertices in which statistics are below a threshold, e.g., the $95$ percentile of the null distribution of the $F$ statistics. So, we have a new graph composed of **multiple connected components**. Then, each connected component is interpreted as a spatiotemporal cluster. Finally, for each connected component, we compute the cluster-mass statistic using the sum (or sum of squares) of statistics of that particular connected component.
 
-
-The cluster-mass null distribution is computed by permutations while maintaining spatiotemporal correlations among tests. Permutations must be performed without changing the position of electrodes nor mixing time-points. Concretely, after transforming the responses using the permutation method in @Kherad, they are sorted in a three-dimensional array. It has the design (subjects $\times$ stimuli) in the first dimension, time in the second one and electrodes in the third one. Then, only the first dimension is permuted to create a re-sampled response (or 3D array).
-Doing so, it does not reorder time-points, neither electrodes, therefore, the spatiotemporal correlations are maintained within each permuted sample.
+The cluster-mass null distribution is computed by permutations while maintaining spatio-temporal correlations among tests. Permutations must be performed without changing the position of electrodes nor mixing time-points. Concretely, after transforming the responses using the permutation method in [Kherad Pajouh and Renaud, 2014](https://link.springer.com/article/10.1007/s00362-014-0617-3), they are sorted in a three-dimensional array. It has the design (subjects $\times$ stimuli) in the first dimension, time in the second one and electrodes in the third one. Then, only the first dimension is permuted to create a re-sampled response (or 3D array). Doing so, it does not reorder time-points, neither electrodes, therefore, the spatiotemporal correlations are maintained within each permuted sample.
 
 # Permuco4brain
 
-In R, all of this is possible thanks to the permuco and permuco4brain packages developed by @Jaromil.
+In R, all of this is possible thanks to the permuco and permuco4brain packages developed by [Frossard and Renaud, 2018](https://cran.r-project.org/web/packages/permuco/vignettes/permuco_tutorial.pdf).
 
-1. Construct the $y$. We need to construct the three-dimensional signal array, having dimensions $40 \times 500 \times 27$:
+1. Construct the $y$. We need to construct the three-dimensional **signal array**, having dimensions $40 \times 500 \times 27$:
 
 ```{r}
 signal <- 
@@ -179,7 +179,7 @@ design <-
 dim(design)
 ```
 
-3. Construct the graph, using $\delta = 53mm$:
+3. Construct the **graph**, using $\delta = 53mm$:
 
 ```{r}
 graph <- position_to_graph(channels_tbl(data_seg), name = .channel, delta = 53,
@@ -187,7 +187,7 @@ graph <- position_to_graph(channels_tbl(data_seg), name = .channel, delta = 53,
 plot(graph)
 ```
 
-4. Define the repeated measures ANOVA formula: 
+4. Define the **repeated measures ANOVA formula**: 
 
 ```{r}
 formula <- signal ~ condition + Error(.subj/(condition))
@@ -234,7 +234,7 @@ where the significant clusters are represented in a colour-scale and the non-sig
 
 # ARI in EEG cluster mass
 
-However, our significant cluster (11) says only that at least one combination channels/time-points is different from $0$, we don't know how many combinations are significant (spatial specificity paradox). So, we can apply ARI to understand the lower bound of the number of true discovery proportion:
+However, our significant cluster (11) says only that at least one combination channels/time-points is different from $0$, we don't know how many combinations are significant (**spatial specificity paradox**). So, we can apply ARI to understand the lower bound of the number of true discovery proportion:
 
 ```{r}
 ARIeeg(model = model)
@@ -243,4 +243,13 @@ ARIeeg(model = model)
 So, we have at least $16.58\%$ truly active component in the cluster $32$.
 
 # References
+
+ - Maris, E., & Oostenveld, R. (2007). Nonparametric statistical testing of EEG-and MEG-data. Journal of neuroscience methods, 164(1), 177-190.
+
+ - Kherad-Pajouh, S., & Renaud, O. (2015). A general permutation approach for analyzing repeated measures ANOVA and mixed-model designs. Statistical Papers, 56(4), 947-967.
+ 
+ - Frossard, J. (2019). Permutation tests and multiple comparisons in the linear models and mixed linear models, with extension to experiments using electroencephalography. DOI: 10.13097/archive-ouverte/unige:125617.
+ 
+ - Frossard, J. & O. Renaud (2018). Permuco: Permutation Tests for Regression, (Repeated Measures) ANOVA/ANCOVA and Comparison of Signals. R Packages.
+
 
