@@ -3,7 +3,11 @@ title: "Cluster mass EEG"
 author: "Angela Andreella"
 date: "09/04/2020"
 output:
+  pdf_document: default
   html_document: default
+editor_options: 
+  chunk_output_type: inline
+papersize: a4
 ---
 
 ```{r setup, include=FALSE}
@@ -101,7 +105,9 @@ A<-data_seg %>%
   geom_vline(xintercept = .17, linetype = "dotted") +
   theme(legend.position = "bottom")+
   scale_color_manual(labels = c("Disgust", "Object"), values = c("#80bfff", "#ff8080"))
-ggplotly(A)%>% layout(margin = list(r = 90))
+ggp <- ggplotly(A)%>% layout(margin = list(r = 90))
+tmpFile <- tempfile(fileext = ".png")
+export(ggp, file = tmpFile)
 ```
 
 # Analysis
@@ -230,7 +236,7 @@ print(model)
 
 We have only one significant cluster (32), with p-value equals to $0.0002$. It is composed by $27$ channels (the total set), with main channels P7. You can see in details the components of this cluster in
 
-```{r}
+```{r echo= FALSE}
 names(model$multiple_comparison$condition$clustermass$cluster$membership[which(as.vector(model$multiple_comparison$condition$clustermass$cluster$membership)==32)])
 ```
 
