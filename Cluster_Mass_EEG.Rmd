@@ -3,15 +3,15 @@ title: "Cluster mass EEG"
 author: "Angela Andreella"
 date: "09/04/2020"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 editor_options: 
   chunk_output_type: inline
 papersize: a4
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,fig.align = "center")
 ```
 
 
@@ -106,9 +106,7 @@ A<-data_seg %>%
   geom_vline(xintercept = .17, linetype = "dotted") +
   theme(legend.position = "bottom")+
   scale_color_manual(labels = c("Disgust", "Object"), values = c("#80bfff", "#ff8080"))
-ggp <- ggplotly(A)%>% layout(margin = list(r = 90))
-tmpFile <- tempfile(fileext = ".png")
-export(ggp, file = tmpFile)
+ggplotly(A)
 ```
 
 # Theory
@@ -144,7 +142,7 @@ $$
 where $H_{X}$ is the **projection matrix**, i.e., $H_{X} = X(X^\top X)^{-1} X^\top$. In order to compute this test, we use an alternative definition of $F$ based on the residuals:
 
 $$
-F = \dfrac{r^\top H_{X^{\eta}} r / (n_{stimuli} - 1)}{ r^\top H_{X^{\eta \pi}}r/(n_{stimuli} -1)(n_{subj} -1)} 
+F_r = \dfrac{r^\top H_{X^{\eta}} r / (n_{stimuli} - 1)}{ r^\top H_{X^{\eta \pi}}r/(n_{stimuli} -1)(n_{subj} -1)} 
 $$
 
 where $r = (H_{X^{\eta}} + H_{X^{\eta\pi}})y$. For further details, see [Kherad Pajouh and Renaud, 2014](https://link.springer.com/article/10.1007/s00362-014-0617-3).
@@ -152,10 +150,10 @@ where $r = (H_{X^{\eta}} + H_{X^{\eta\pi}})y$. For further details, see [Kherad 
 So, let the group of permutation, including the identity transformation, $\mathcal{P}$, we use $r^\star = P r$, where $P \in \mathcal{P}$ to compute the null distribution of our test, i.e., $\mathcal{R}$, and then the p-value, i.e.,
 
 $$
-\text{p-value} = \dfrac{1}{B} \sum_{r^\star_b \in \mathcal{R}} \mathbb{I}(|r^\star_b| \ge |r|)
+\text{p-value} = \dfrac{1}{B} \sum_{F^\star_r \in \mathcal{R}} \mathbb{I}(|F^\star_r| \ge |F_r|)
 $$
 
-if the two-tailed is considered.
+if the two-tailed is considered, where $F^\star_r = f(r^\star)$.
 
 We have this model for each time point $t \in \{1, \dots, 500\}$ and each channel, so finally we will have $n_{\text{time-points}} \times n_{\text{channels}}$ statistical tests/p-values (raw).
 
@@ -202,7 +200,7 @@ So, we select one channel from our dataset, e.g. the Fp1:
 Fp1 <- data_seg %>% select(Fp1)
 ```
 
-We construct the signal data:
+1. Construct the $y$. We need to construct the three-dimensional **signal matrix**, having dimensions $40 \times 500$:
 
 ```{r}
 signal_Fp1 <- Fp1%>%
@@ -213,24 +211,33 @@ signal_Fp1 <- Fp1%>%
     pull(data)%>%
     invoke(abind,.,along = 2)%>%
     aperm(c(2,1))
+dim(signal_Fp1)
 ```
 
-and the design one:
+2. Construct the $X_{\eta \pi}$, having dimensions $40 \times 2$:
 
 ```{r}
 design <- 
   segments_tbl(Fp1)%>%
   select(.subj, condition)
+dim(design)
+```
+
+3. Define the **repeated measures ANOVA formula**: 
+
+```{r}
+f <- signal_Fp1 ~ condition + Error(.subj/(condition))
 ```
 
 Thanks to the permuco package, we can apply the temporal cluster-Mass for the channel Fp1:
 
 ```{r}
 
-lm_Fp1 <- clusterlm(signal_Fp1 ~ condition + Error(.subj/(condition)),data = design,
-                      )
-lm_Fp1
+lm_Fp1 <- clusterlm(f,data = design)
+print(lm_Fp1)
 ```
+
+and the corresponding plot:
 
 ```{r}
 plot(lm_Fp1)
@@ -247,7 +254,7 @@ cluster <- c(161:246)
 discoveries(hommel(praw), ix = cluster)
 ```
 
-Therefore, the lower bound for the number of true discoveries is equals $54$, for the true discovery proportion is equal to $62.79\%$.
+Therefore, we have at least $62\%$ of true active time points in the cluster computed.
 
 ## Spatial-Temporal Cluster-Mass
 
@@ -311,7 +318,7 @@ print(model)
 
 We have only one significant cluster (32), with p-value equals to $0.0002$. It is composed by $27$ channels (the total set), with main channels P7. You can see in details the components of this cluster in
 
-```{r, echo= FALSE}
+```{r}
 names(model$multiple_comparison$condition$clustermass$cluster$membership[which(as.vector(model$multiple_comparison$condition$clustermass$cluster$membership)==32)])
 ```
 
