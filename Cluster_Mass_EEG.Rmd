@@ -111,7 +111,6 @@ tmpFile <- tempfile(fileext = ".png")
 export(p, file = tmpFile)
 ```
 
-![global ERP respect two conditions, i.e., disgust face and object.](`r tmpFile`)
 
 # Theory
 
