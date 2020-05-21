@@ -106,8 +106,12 @@ A<-data_seg %>%
   geom_vline(xintercept = .17, linetype = "dotted") +
   theme(legend.position = "bottom")+
   scale_color_manual(labels = c("Disgust", "Object"), values = c("#80bfff", "#ff8080"))
-ggplotly(A)
+p<-ggplotly(A)
+tmpFile <- tempfile(fileext = ".png")
+export(p, file = tmpFile)
 ```
+
+![global ERP respect two conditions, i.e., disgust face and object.](`r tmpFile`)
 
 # Theory
 
