@@ -63,7 +63,7 @@ Finally, we segment the data and select two conditions, i.e., **disgust face** a
 ```{r 5, warning=FALSE,message=FALSE}
 data_seg <- data %>%
   eeg_segment(.description %in% c(3,5),
-              lim = c(min(dati$timings$time), max(dati$timings$time))
+              .lim = c(min(dati$timings$time), max(dati$timings$time))
   ) %>% eeg_baseline()  %>%
   mutate(
     condition =
